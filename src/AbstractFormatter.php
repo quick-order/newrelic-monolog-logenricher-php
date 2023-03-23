@@ -13,8 +13,10 @@
 
 namespace NewRelic\Monolog\Enricher;
 
+use DateTimeInterface;
 use Monolog\Formatter\JsonFormatter;
 use Monolog\Logger;
+use Monolog\LogRecord;
 
 /**
  * Formats record as a JSON object with transformations necessary for
@@ -49,17 +51,31 @@ abstract class AbstractFormatter extends JsonFormatter
      * @param int $depth
      * @return mixed
      */
-    protected function normalize($data, $depth = 0)
+    protected function normalize($data, $depth = 0): mixed
     {
         if ($depth == 0) {
+
+            $data = $data instanceof LogRecord
+                ? $data->toArray()
+                : $data;
+
+            $data['timestamp'] = (int) ($data['datetime']->format('U.u') * 1000);
+
+            if ($data['datetime'] instanceof DateTimeInterface) {
+                $data['datetime'] = (array) $data['datetime'];
+            }
+
             if (isset($data['extra']['newrelic-context'])) {
-                $data = array_merge($data, $data['extra']['newrelic-context']);
+
+                $data = [
+                    ... $data,
+                    ... $data['extra']['newrelic-context'],
+                ];
+
                 unset($data['extra']['newrelic-context']);
             }
-            $data['timestamp'] = intval(
-                $data['datetime']->format('U.u') * 1000
-            );
         }
+
         return parent::normalize($data, $depth);
     }
 }

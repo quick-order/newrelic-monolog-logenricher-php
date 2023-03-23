@@ -16,11 +16,8 @@
 namespace NewRelic\Monolog\Enricher;
 
 use Monolog\Formatter\FormatterInterface;
-use Monolog\Handler\AbstractProcessingHandler;
-use Monolog\Handler\Curl;
 use Monolog\Handler\HandlerInterface;
-use Monolog\Logger;
-use Monolog\Util;
+use Monolog\LogRecord;
 
 class Handler extends AbstractHandler
 {
@@ -29,7 +26,7 @@ class Handler extends AbstractHandler
      *
      * @param array $record
      */
-    protected function write(array $record): void
+    protected function write(LogRecord $record): void
     {
         $this->send($record["formatted"]);
     }
@@ -45,9 +42,11 @@ class Handler extends AbstractHandler
     public function handleBatch(array $records): void
     {
         $level = $this->level;
+
         $records = array_filter($records, function ($record) use ($level) {
-            return ($record['level'] >= $level);
+            return $record['level'] >= $level->value;
         });
+
         if ($records) {
             $this->sendBatch($this->getFormatter()->formatBatch($records));
         }

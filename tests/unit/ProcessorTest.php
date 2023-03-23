@@ -13,7 +13,10 @@
 
 namespace NewRelic\Monolog\Enricher;
 
-use PHPUnit_Framework_TestCase;
+use Monolog\Level;
+use Monolog\LogRecord;
+use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Override the New Relic PHP Extension's `newrelic_get_linking_metadata()`
@@ -28,7 +31,7 @@ function newrelic_get_linking_metadata()
                  'entity.type' => 'SERVICE');
 }
 
-class ProcessorTest extends PHPUnit_Framework_TestCase
+class ProcessorTest extends TestCase
 {
     /**
      * getMockedProcessor returns a mocked NewRelic\Monolog\Enricher\Processor
@@ -37,12 +40,11 @@ class ProcessorTest extends PHPUnit_Framework_TestCase
      * compatible New Relic extension (v9.3 or higher) is not available.
      *
      * @param bool $nr_ext_compat Whether a compatible extension was 'found'
-     * @return MockedProcessor
      */
-    private function getMockedProcessor($nr_ext_compat)
+    private function getMockedProcessor($nr_ext_compat): MockObject
     {
         $proc = $this->getMockBuilder('NewRelic\Monolog\Enricher\Processor')
-                     ->setMethods(array('contextAvailable'))
+                     ->onlyMethods(array('contextAvailable'))
                      ->getMock();
         $proc->method('contextAvailable')
              ->willReturn($nr_ext_compat);
@@ -57,7 +59,14 @@ class ProcessorTest extends PHPUnit_Framework_TestCase
      */
     public function testInvoke()
     {
-        $input = array('foo' => 'bar');
+        $input = new LogRecord(
+            new \DateTimeImmutable("now", new \DateTimeZone("UTC")),
+            'test',
+            Level::Warning,
+            'test',
+            [],
+            [],
+        );
 
         $proc = $this->getMockedProcessor(true);
         $enriched_record = $proc($input);
@@ -73,7 +82,15 @@ class ProcessorTest extends PHPUnit_Framework_TestCase
      */
     public function testInputPassthroughWhenNewRelicNotLoaded()
     {
-        $input = array('foo' => 'bar');
+        $input = new LogRecord(
+            new \DateTimeImmutable("now", new \DateTimeZone("UTC")),
+            'test',
+            Level::Warning,
+            'test',
+            [],
+            [],
+        );
+
         $proc = $this->getMockedProcessor(false);
 
         $this->assertSame($input, $proc($input));
