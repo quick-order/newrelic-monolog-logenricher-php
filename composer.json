@@ -10,7 +10,7 @@
         }
     ],
     "require": {
-        "php": "^v8.2",
+        "php": ">=v8.1",
         "monolog/monolog": "^3.0"
     },
     "require-dev": {
